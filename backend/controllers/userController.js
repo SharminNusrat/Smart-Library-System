@@ -117,37 +117,4 @@ const getUserById = (req, res) => {
     })
 }
 
-const fetchProfile = (req, res) => {
-    const userId = req.user.id
-    const userQuery = 'SELECT id, name, phone, email, role FROM users WHERE id = ?'
-    db.query(userQuery, [userId], (err, data) => {
-        if (err) {
-            console.log(err);
-            return res.status(500).json({
-                status: 'error',
-                error: 'Failed to fetch user data'
-            });
-        }
-        if (data.length === 0) {
-            return res.status(404).json({
-                status: 'error',
-                error: 'User not found!'
-            });
-        }
-
-        const userProfile = {
-            id: data[0].id,
-            name: data[0].name,
-            email: data[0].email,
-            phone: data[0].phone,
-            role: data[0].role,
-        }
-
-        return res.status(200).json({
-            status: 'success',
-            data: userProfile
-        })
-    })
-}
-
-module.exports = {signup, login, logout, fetchProfile, getUserById}
+module.exports = {signup, login, logout, getUserById}

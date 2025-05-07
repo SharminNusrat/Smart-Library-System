@@ -1,20 +1,11 @@
 const express = require('express')
 const app = express()
-const db = require('./config/db-config')
 const userRoutes = require('./routes/userRoutes')
 const bookRoutes = require('./routes/bookRoutes')
 const loanRoutes = require('./routes/loanRoutes')
 const statsRoutes = require('./routes/statsRoutes')
 
 const port = process.env.PORT || 8000
-db.connect((err) => {
-    if(err) {
-        console.log(err)
-    }
-    else {
-        console.log('MySQL Connected!')
-    }
-})
 
 app.use(express.json())
 app.use(express.urlencoded({extended: true}))

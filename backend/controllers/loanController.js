@@ -1,10 +1,4 @@
-const db = require('../config/db-config')
-const util = require('util')
-
-const query = util.promisify(db.query).bind(db)
-const beginTransaction = util.promisify(db.beginTransaction).bind(db)
-const commit = util.promisify(db.commit).bind(db)
-const rollback = util.promisify(db.rollback).bind(db)
+const Loan = require('../models/Loan');
 
 const issueLoan = async (req, res) => {
     const {user_id, book_id, due_date} = req.body
@@ -26,87 +20,25 @@ const issueLoan = async (req, res) => {
         });
     }
 
-    let connection;
     try {
-        await beginTransaction()
+        const loanData = {
+            user_id,
+            book_id,
+            due_date
+        };
 
-        const bookResults = await query(
-            'SELECT available_copies FROM books WHERE id = ? FOR UPDATE',
-            [book_id]
-        )
-        if(bookResults.length === 0) {
-            await rollback()
-            return res.status(404).json({
-                status: 'error',
-                message: 'Book not found!'
-            });
-        }
-
-        const currentAvailable = bookResults[0].available_copies
-        if(currentAvailable <= 0) {
-            await rollback
-            return res.status(404).json({
-                status: 'error',
-                message: 'No available copies of this book'
-            });
-        }
-
-        const userResults = await query(
-            'SELECT id FROM users WHERE id = ?',
-            [user_id]
-        )
-        if(userResults.length === 0) {
-            await rollback()
-            return res.status(404).json({
-                status: 'error',
-                message: 'User not found!'
-            });
-        }
-
-        const existingLoans = await query(
-            'SELECT id FROM loans WHERE user_id = ? AND book_id = ? AND status = ?',
-            [user_id, book_id, "ACTIVE"]
-        )
-        if(existingLoans.length > 0) {
-            await rollback()
-            return res.status(400).json({ 
-                status: 'error', 
-                message: 'You already have an active loan for this book' 
-            });
-        }
-
-        const loanResults = await query(
-            'INSERT INTO loans (user_id, book_id, due_date, status) VALUES (?, ?, ?, ?)',
-            [user_id, book_id, due_date, "ACTIVE"]
-        )
-
-        const newAvailable = currentAvailable - 1
-        let updateBookQuery = 'UPDATE books SET available_copies = ?'
-        const updateParams = [newAvailable]
-
-        if(newAvailable === 0) {
-            updateBookQuery += ', status = "UNAVAILABLE"'
-        }
-
-        updateBookQuery += ' WHERE id = ?'
-        updateParams.push(book_id)
-
-        await query(updateBookQuery, updateParams)
-        await commit()
-
-        const loanData = await query(
-            'SELECT * FROM loans WHERE id = ?', [loanResults.insertId]
-        )
+        const newLoan = await Loan.create(loanData);
         return res.status(201).json({
             status: 'success',
-            data: loanData[0]
-        })
+            data: newLoan
+        });
     } catch (err) {
-        if (connection) await rollback();
         console.error(err);
-        return res.status(500).json({ 
-            status: 'error', 
-            message: 'Database operation failed' 
+        const statusCode = err.message.includes('not found') ? 404 : 
+                         err.message.includes('already has') ? 400 : 500;
+        return res.status(statusCode).json({
+            status: 'error',
+            message: err.message || 'Failed to issue loan'
         });
     }
 }
