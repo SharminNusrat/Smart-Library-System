@@ -104,18 +104,22 @@ const Book = {
         return result;
     },
 
-    getAvailableCopiesWithLock: async (bookId) => {
-        const results = await query(
+    getByIdForUpdate: async (bookId, conn) => {
+        const [rows] = await conn.query(
             'SELECT available_copies FROM books WHERE id = ? FOR UPDATE',
             [bookId]
         );
-        if (results.length === 0) {
+        if (!rows || rows.length === 0) {
             throw new Error('Book not found');
         }
-        return results[0].available_copies;
+
+        return {
+            exists: true,
+            availableCopies: rows[0].available_copies
+        };
     },
 
-    updateAvailability: async (bookId, newAvailable) => {
+    updateAvailability: async (bookId, newAvailable, connection) => {
         let updateQuery = 'UPDATE books SET available_copies = ?';
         const params = [newAvailable];
 
@@ -128,7 +132,33 @@ const Book = {
         updateQuery += ' WHERE id = ?';
         params.push(bookId);
 
-        await query(updateQuery, params);
+        await connection.query(updateQuery, params);
+    },
+
+    getPopularBooks: async (limit = 5) => {
+        const [results] = await db.promise().query(`
+            SELECT 
+                b.id AS book_id,
+                b.title,
+                b.author,
+                COUNT(l.id) AS borrow_count
+            FROM books b
+            LEFT JOIN loans l ON b.id = l.book_id
+            GROUP BY b.id
+            ORDER BY borrow_count DESC
+            LIMIT ?
+        `, [limit]);
+        return results;
+    },
+
+    getCounts: async () => {
+        const [results] = await db.promise().query(`
+            SELECT 
+                COUNT(*) AS total_books,
+                SUM(available_copies) AS books_available
+            FROM books
+        `);
+        return results[0];
     }
 }
 
