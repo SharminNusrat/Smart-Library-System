@@ -1,5 +1,6 @@
 const db = require('../config/db-config')
 const Book = require('../models/Book');
+const { hasActiveLoan } = require('../services/externalServices')
 
 const handleError = (res, error, message = 'Database error') => {
     console.error(error);
@@ -104,15 +105,15 @@ const getBookById = async (req, res) => {
 const updateBook = async (req, res) => {
     try {
         const bookId = req.params.id;
-        const { 
-            title, 
-            author, 
-            isbn, 
-            copies, 
-            available_copies, 
-            status, 
-            genre, 
-            published_year 
+        const {
+            title,
+            author,
+            isbn,
+            copies,
+            available_copies,
+            status,
+            genre,
+            published_year
         } = req.body;
 
         if (!bookId || isNaN(bookId)) {
@@ -153,7 +154,7 @@ const updateBook = async (req, res) => {
                 message: 'Book not found'
             });
         }
-        
+
         const updatedBook = await Book.getById(bookId);
         return res.status(200).json({
             status: 'success',
@@ -162,6 +163,40 @@ const updateBook = async (req, res) => {
         });
     } catch (error) {
         handleError(res, error, 'Update failed');
+    }
+};
+
+const updateBookAvailability = async (req, res) => {
+    const bookId = req.params.id
+    const { operation } = req.body
+
+    if (!['increment', 'decrement'].includes(operation)) {
+        return res.status(400).json({ error: 'Invalid operation' })
+    }
+
+    try {
+        const book = await Book.getById(bookId)
+        if (!book) {
+            return res.status(404).json({ error: 'Book not found' })
+        }
+
+        let newAvailable = book.available_copies
+        if (operation === 'decrement') {
+            if (newAvailable <= 0) {
+                return res.status(400).json({ error: 'No copies available' });
+            }
+            newAvailable--;
+        }
+        else {
+            newAvailable++;
+        }
+
+        await Book.updateAvailability(bookId, newAvailable)
+
+        return res.status(200).json({ message: 'Availability updated', available_copies: newAvailable });
+    } catch (err) {
+        console.error(err);
+        return res.status(500).json({ error: 'Internal server error' });
     }
 };
 
@@ -175,13 +210,21 @@ const deleteBook = async (req, res) => {
             });
         }
 
-        // const hasLoans = await Loan.existsActiveLoanForBook(bookId);
-        // if (hasLoans) {
-        //     return res.status(400).json({
-        //         status: 'error',
-        //         message: 'Cannot delete book with active loans'
-        //     });
-        // }
+        try {
+            const hasLoans = await hasActiveLoan(bookId);
+            if (hasLoans.data.exists) {
+                return res.status(400).json({
+                    status: 'error',
+                    message: 'Cannot delete book with active loans'
+                });
+            }
+        } catch (err) {
+            console.error('Loan check failed:', err.message);
+            return res.status(503).json({
+                status: 'error',
+                message: 'Loan Service unavailable'
+            });
+        }
 
         const result = await Book.delete(bookId);
         if (result.affectedRows === 0) {
@@ -204,4 +247,5 @@ module.exports = {
     getBookById,
     updateBook,
     deleteBook,
+    updateBookAvailability
 };

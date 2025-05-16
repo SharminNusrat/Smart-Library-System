@@ -42,13 +42,13 @@ const User = {
         });
     },
 
-    exists: async (userId, connection) => {
-        const [results] = await connection.query(
-            'SELECT id FROM users WHERE id = ?',
-            [userId]
-        );
-        return results.length > 0;
-    },
+    // exists: async (userId, connection) => {
+    //     const [results] = await connection.query(
+    //         'SELECT id FROM users WHERE id = ?',
+    //         [userId]
+    //     );
+    //     return results.length > 0;
+    // },
 
     getActiveUsers: async (limit = 5) => {
         const [results] = await db.promise().query(`

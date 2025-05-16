@@ -104,22 +104,7 @@ const Book = {
         return result;
     },
 
-    getByIdForUpdate: async (bookId, conn) => {
-        const [rows] = await conn.query(
-            'SELECT available_copies FROM books WHERE id = ? FOR UPDATE',
-            [bookId]
-        );
-        if (!rows || rows.length === 0) {
-            throw new Error('Book not found');
-        }
-
-        return {
-            exists: true,
-            availableCopies: rows[0].available_copies
-        };
-    },
-
-    updateAvailability: async (bookId, newAvailable, connection) => {
+    updateAvailability: async (bookId, newAvailable) => {
         let updateQuery = 'UPDATE books SET available_copies = ?';
         const params = [newAvailable];
 
@@ -132,7 +117,7 @@ const Book = {
         updateQuery += ' WHERE id = ?';
         params.push(bookId);
 
-        await connection.query(updateQuery, params);
+        await db.promise().query(updateQuery, params);
     },
 
     getPopularBooks: async (limit = 5) => {
