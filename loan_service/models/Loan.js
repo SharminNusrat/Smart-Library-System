@@ -85,7 +85,7 @@ const Loan = {
                 due_date,
                 return_date,
                 status,
-                extensions_count,
+                extensions_count
             FROM loans 
             WHERE user_id = ?
             ORDER BY issue_date DESC

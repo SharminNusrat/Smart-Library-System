@@ -14,7 +14,7 @@ router.post('/', issueLoan)
 router.post('/returns', returnBook)
 router.get('/overdue', getOverdueLoans)
 router.get('/:user_id', getUserLoans)
-router.put('/:id/extend', extendLoan)
+router.patch('/:id/extend', extendLoan)
 router.get('/book/:id/check', checkActiveLoanForBook)
 
 module.exports = router

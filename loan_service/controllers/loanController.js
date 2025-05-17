@@ -137,7 +137,7 @@ const getUserLoans = async (req, res) => {
                 console.error(`Failed to fetch book ${loan.book_id}:`, err.message);
             }
 
-            return {
+            res.status(200).json({
                 id: loan.id,
                 book: bookInfo ? {
                     id: loan.book_id,
@@ -149,16 +149,16 @@ const getUserLoans = async (req, res) => {
                 due_date: loan.due_date,
                 return_date: loan.return_date,
                 status: loan.status,
-                extensions_count: loan.extensions_count,
-            };
+                extensions_count: loan.extensions_count
+            });
         })
     );
 };
 
 const getOverdueLoans = async (req, res) => {
-
     try {
         const results = await Loan.findOverdue();
+        
         const overdueLoans = await Promise.all(
             results.map(async (loan) => {
                 let user = { id: loan.user_id };
@@ -172,10 +172,7 @@ const getOverdueLoans = async (req, res) => {
                         email: userResponse.email
                     };
                 } catch (err) {
-                    if (err.code === 'ECONNABORTED' || err.message.includes('Breaker')) {
-                        return res.status(503).json({ status: 'error', message: 'User Service unavailable' });
-                    }
-                    return res.status(404).json({ status: 'error', message: 'User not found' });
+                    console.error(`Failed to fetch user ${loan.user_id}:`, err.message);
                 }
 
                 try {
@@ -186,10 +183,7 @@ const getOverdueLoans = async (req, res) => {
                         author: bookResponse.author
                     };
                 } catch (err) {
-                    if (err.code === 'ECONNABORTED' || err.message.includes('Breaker')) {
-                        return res.status(503).json({ status: 'error', message: 'Book Service unavailable' });
-                    }
-                    return res.status(404).json({ status: 'error', message: 'Book not found' });
+                    console.error(`Failed to fetch book ${loan.book_id}:`, err.message);
                 }
 
                 return {
@@ -199,9 +193,15 @@ const getOverdueLoans = async (req, res) => {
                     issue_date: loan.issue_date,
                     due_date: loan.due_date,
                     days_overdue: loan.days_overdue
-                }
+                };
             })
-        )
+        );
+
+        return res.status(200).json({
+            status: 'success',
+            data: overdueLoans
+        });
+
     } catch (error) {
         console.error('Database error:', error);
         return res.status(500).json({
