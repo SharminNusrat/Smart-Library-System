@@ -120,29 +120,29 @@ const Book = {
         await db.promise().query(updateQuery, params);
     },
 
-    getPopularBooks: async (limit = 5) => {
-        const [results] = await db.promise().query(`
-            SELECT 
-                b.id AS book_id,
-                b.title,
-                b.author,
-                COUNT(l.id) AS borrow_count
-            FROM books b
-            LEFT JOIN loans l ON b.id = l.book_id
-            GROUP BY b.id
-            ORDER BY borrow_count DESC
-            LIMIT ?
-        `, [limit]);
-        return results;
-    },
+    // getPopularBooks: async (limit = 5) => {
+    //     const [results] = await db.promise().query(`
+    //         SELECT 
+    //             b.id AS book_id,
+    //             b.title,
+    //             b.author,
+    //             COUNT(l.id) AS borrow_count
+    //         FROM books b
+    //         LEFT JOIN loans l ON b.id = l.book_id
+    //         GROUP BY b.id
+    //         ORDER BY borrow_count DESC
+    //         LIMIT ?
+    //     `, [limit]);
+    //     return results;
+    // },
 
     getCounts: async () => {
         const [results] = await db.promise().query(`
-            SELECT 
-                COUNT(*) AS total_books,
-                SUM(available_copies) AS books_available
-            FROM books
-        `);
+        SELECT 
+            COUNT(*) AS total_books,
+            CAST(SUM(available_copies) AS SIGNED) AS books_available
+        FROM books
+    `);
         return results[0];
     }
 }

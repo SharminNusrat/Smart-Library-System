@@ -241,11 +241,24 @@ const deleteBook = async (req, res) => {
     }
 };
 
+const getBookCounts = async (req, res) => {
+    try {
+        const data = await Book.getCounts();
+        res.json({
+            total_books: Number(data.total_books),
+            books_available: Number(data.books_available)
+        });
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to get book stats' });
+    }
+}
+
 module.exports = {
     addNewBook,
     searchBooks,
     getBookById,
     updateBook,
     deleteBook,
-    updateBookAvailability
+    updateBookAvailability,
+    getBookCounts
 };

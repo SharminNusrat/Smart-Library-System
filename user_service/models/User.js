@@ -86,7 +86,7 @@ const User = {
         const [results] = await db.promise().query(`
             SELECT COUNT(*) AS total_users FROM users
         `);
-        return results[0].total_users;
+        return results[0];
     }
 }
 

@@ -50,20 +50,20 @@ const User = {
         return results.length > 0;
     },
 
-    getActiveUsers: async (limit = 5) => {
-        const [results] = await db.promise().query(`
-            SELECT 
-                u.id AS user_id,
-                u.name,
-                COUNT(l.id) AS books_borrowed
-            FROM users u
-            LEFT JOIN loans l ON u.id = l.user_id
-            GROUP BY u.id
-            ORDER BY books_borrowed DESC
-            LIMIT ?
-        `, [limit]);
-        return results;
-    },
+    // getActiveUsers: async (limit = 5) => {
+    //     const [results] = await db.promise().query(`
+    //         SELECT 
+    //             u.id AS user_id,
+    //             u.name,
+    //             COUNT(l.id) AS books_borrowed
+    //         FROM users u
+    //         LEFT JOIN loans l ON u.id = l.user_id
+    //         GROUP BY u.id
+    //         ORDER BY books_borrowed DESC
+    //         LIMIT ?
+    //     `, [limit]);
+    //     return results;
+    // },
 
     getTotalCount: async () => {
         const [results] = await db.promise().query(`

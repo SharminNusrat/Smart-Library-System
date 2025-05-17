@@ -157,4 +157,13 @@ const updateUser = async (req, res) => {
     }
 };
 
-module.exports = { signup, login, logout, getUserById, updateUser };
+const getUserCounts = async (req, res) => {
+    try {
+        const total = await User.getTotalCount();
+        res.json(total);
+    } catch (err) {
+        res.status(500).json({ message: 'Failed to get user count' });
+    }
+}
+
+module.exports = { signup, login, logout, getUserById, updateUser, getUserCounts };

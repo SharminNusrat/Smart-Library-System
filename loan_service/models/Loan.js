@@ -182,16 +182,38 @@ const Loan = {
         return rows.length > 0;
     },
 
+    getPopularBookStats: async (limit = 5) => {
+        const [results] = await db.promise().query(`
+        SELECT book_id, COUNT(id) AS borrow_count
+        FROM loans
+        GROUP BY book_id
+        ORDER BY borrow_count DESC
+        LIMIT ?
+    `, [limit]);
+        return results;
+    },
+
+    getActiveUserStats: async (limit = 5) => {
+        const [results] = await db.promise().query(`
+        SELECT user_id, COUNT(id) AS books_borrowed
+        FROM loans
+        GROUP BY user_id
+        ORDER BY books_borrowed DESC
+        LIMIT ?
+    `, [limit]);
+        return results;
+    },
+
     getCurrentStats: async () => {
         const [results] = await db.promise().query(`
-            SELECT 
-                COUNT(*) AS books_borrowed,
-                SUM(CASE WHEN due_date < NOW() THEN 1 ELSE 0 END) AS overdue_loans,
-                SUM(CASE WHEN DATE(issue_date) = CURDATE() THEN 1 ELSE 0 END) AS loans_today,
-                SUM(CASE WHEN DATE(return_date) = CURDATE() THEN 1 ELSE 0 END) AS returns_today
-            FROM loans 
-            WHERE status = 'ACTIVE'
-        `);
+        SELECT 
+            COUNT(*) AS books_borrowed,
+            SUM(CASE WHEN due_date < NOW() AND status = 'ACTIVE' THEN 1 ELSE 0 END) AS overdue_loans,
+            SUM(CASE WHEN DATE(issue_date) = CURDATE() THEN 1 ELSE 0 END) AS loans_today,
+            SUM(CASE WHEN status = 'RETURNED' AND DATE(return_date) = CURDATE() THEN 1 ELSE 0 END) AS returns_today
+        FROM loans
+        WHERE status IN ('ACTIVE', 'RETURNED')
+    `);
         return results[0];
     }
 }
