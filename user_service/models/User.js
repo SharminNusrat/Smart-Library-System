@@ -36,19 +36,36 @@ const User = {
         return users[0];
     },
 
+    update: async (userId, updateData) => {
+        let updateFields = [];
+        let updateValues = [];
+
+        Object.entries(updateData).forEach(([field, value]) => {
+            if (value !== undefined) {
+                updateFields.push(`${field} = ?`);
+                updateValues.push(value);
+            }
+        });
+
+        updateFields.push('updated_at = CURRENT_TIMESTAMP');
+        updateValues.push(userId);
+
+        const updateQuery = `
+        UPDATE users
+        SET ${updateFields.join(', ')}
+        WHERE id = ?
+        `;
+        console.log(updateQuery);
+
+        const [result] = await db.promise().query(updateQuery, updateValues);
+        return result;
+    },
+
     generateToken: (userId) => {
         return jwt.sign({ id: userId }, process.env.JWT_SECRET, {
             expiresIn: process.env.JWT_EXPIRES_IN || '1h'
         });
     },
-
-    // exists: async (userId, connection) => {
-    //     const [results] = await connection.query(
-    //         'SELECT id FROM users WHERE id = ?',
-    //         [userId]
-    //     );
-    //     return results.length > 0;
-    // },
 
     getActiveUsers: async (limit = 5) => {
         const [results] = await db.promise().query(`

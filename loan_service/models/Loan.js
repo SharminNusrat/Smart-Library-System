@@ -76,6 +76,11 @@ const Loan = {
         }
     },
 
+    getById: async (loanId) => {
+        const [results] = await db.promise().query(`SELECT * FROM loans WHERE id = ?`, [loanId]);
+        return results[0];
+    },
+
     findByUserId: async (userId) => {
         const loanQuery = `
             SELECT 
@@ -93,7 +98,7 @@ const Loan = {
 
         const [results] = await db.promise().query(loanQuery, [userId]);
 
-        return results;
+        return results[0];
     },
 
     findOverdue: async () => {

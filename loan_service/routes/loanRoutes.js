@@ -7,13 +7,15 @@ const {
     getUserLoans,
     getOverdueLoans,
     extendLoan,
-    checkActiveLoanForBook
+    checkActiveLoanForBook,
+    getLoanById
 } = require('../controllers/loanController')
 
 router.post('/', issueLoan)
 router.post('/returns', returnBook)
+router.get('/:id', getLoanById)
 router.get('/overdue', getOverdueLoans)
-router.get('/:user_id', getUserLoans)
+router.get('/user/:user_id', getUserLoans)
 router.patch('/:id/extend', extendLoan)
 router.get('/book/:id/check', checkActiveLoanForBook)
 

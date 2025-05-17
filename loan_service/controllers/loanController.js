@@ -115,6 +115,68 @@ const returnBook = async (req, res) => {
     }
 };
 
+const getLoanById = async (req, res) => {
+    const loanId = req.params.id
+
+    if (!loanId || isNaN(loanId)) {
+        return res.status(400).json({
+            status: 'error',
+            message: 'Valid user ID is required!'
+        });
+    }
+
+    try {
+        const loan = await Loan.getById(loanId);
+        
+        if (!loan) {
+            return res.status(404).json({
+                status: 'error',
+                message: 'Loan not found'
+            });
+        }
+
+        const [userResponse, bookResponse] = await Promise.allSettled([
+            getUserById(loan.user_id),
+            getBookById(loan.book_id)
+        ]);
+
+        const user = userResponse.status === 'fulfilled' 
+            ? {
+                id: userResponse.value.id,
+                name: userResponse.value.name,
+                email: userResponse.value.email
+            }
+            : { id: loan.user_id };
+
+        const book = bookResponse.status === 'fulfilled'
+            ? {
+                id: bookResponse.value.id,
+                title: bookResponse.value.title,
+                author: bookResponse.value.author
+            }
+            : { id: loan.book_id };
+
+        const response = {
+            id: loan.id,
+            user,
+            book,
+            issue_date: loan.issue_date,
+            due_date: loan.due_date,
+            return_date: loan.return_date,
+            status: loan.status
+        };
+
+        return res.status(200).json(response);
+
+    } catch (error) {
+        console.error('Error fetching loan:', error);
+        return res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch loan details'
+        });
+    }
+}
+
 const getUserLoans = async (req, res) => {
     const userId = req.params.user_id;
 
@@ -125,34 +187,48 @@ const getUserLoans = async (req, res) => {
         });
     }
 
-    const results = await Loan.findByUserId(userId);
+    try {
+        const results = await Loan.findByUserId(userId);
 
-    const loans = await Promise.all(
-        results.map(async (loan) => {
-            let bookInfo = null;
-            try {
-                const response = await getBookById(loan.book_id)
-                bookInfo = response.data
-            } catch (err) {
-                console.error(`Failed to fetch book ${loan.book_id}:`, err.message);
-            }
+        const loans = await Promise.all(
+            results.map(async (loan) => {
+                let bookInfo = null;
+                try {
+                    const response = await getBookById(loan.book_id);
+                    bookInfo = response.data;
+                } catch (err) {
+                    console.error(`Failed to fetch book ${loan.book_id}:`, err.message);
+                }
 
-            res.status(200).json({
-                id: loan.id,
-                book: bookInfo ? {
-                    id: loan.book_id,
-                    title: bookInfo.title,
-                    author: bookInfo.author,
-                    isbn: bookInfo.isbn
-                } : { id: loan.book_id },  // fallback if book fetch fails
-                issue_date: loan.issue_date,
-                due_date: loan.due_date,
-                return_date: loan.return_date,
-                status: loan.status,
-                extensions_count: loan.extensions_count
-            });
-        })
-    );
+                return {
+                    id: loan.id,
+                    book: bookInfo ? {
+                        id: loan.book_id,
+                        title: bookInfo.title,
+                        author: bookInfo.author,
+                        isbn: bookInfo.isbn
+                    } : { id: loan.book_id },
+                    issue_date: loan.issue_date,
+                    due_date: loan.due_date,
+                    return_date: loan.return_date,
+                    status: loan.status,
+                    extensions_count: loan.extensions_count
+                };
+            })
+        );
+
+        return res.status(200).json({
+            status: 'success',
+            data: loans
+        });
+
+    } catch (error) {
+        console.error('Error fetching user loans:', error);
+        return res.status(500).json({
+            status: 'error',
+            message: 'Failed to fetch user loans'
+        });
+    }
 };
 
 const getOverdueLoans = async (req, res) => {
@@ -290,4 +366,5 @@ module.exports = {
     getOverdueLoans,
     extendLoan,
     checkActiveLoanForBook,
+    getLoanById
 }
