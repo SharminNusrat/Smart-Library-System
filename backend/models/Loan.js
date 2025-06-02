@@ -14,6 +14,7 @@ const Loan = {
                 bookInfo = await Book.getByIdForUpdate(loanData.book_id, connection);
             } catch (err) {
                 if (err.message === 'Book not found') {
+                    await connection.rollback();
                     throw new Error('Book not found');
                 }
                 throw err;
@@ -222,14 +223,14 @@ const Loan = {
 
     getCurrentStats: async () => {
         const [results] = await db.promise().query(`
-            SELECT 
-                COUNT(*) AS books_borrowed,
-                SUM(CASE WHEN due_date < NOW() THEN 1 ELSE 0 END) AS overdue_loans,
-                SUM(CASE WHEN DATE(issue_date) = CURDATE() THEN 1 ELSE 0 END) AS loans_today,
-                SUM(CASE WHEN DATE(return_date) = CURDATE() THEN 1 ELSE 0 END) AS returns_today
-            FROM loans 
-            WHERE status = 'ACTIVE'
-        `);
+        SELECT 
+            COUNT(*) AS books_borrowed,
+            SUM(CASE WHEN due_date < NOW() AND status = 'ACTIVE' THEN 1 ELSE 0 END) AS overdue_loans,
+            SUM(CASE WHEN DATE(issue_date) = CURRENT_DATE() THEN 1 ELSE 0 END) AS loans_today,
+            SUM(CASE WHEN status = 'RETURNED' AND DATE(return_date) = CURRENT_DATE() THEN 1 ELSE 0 END) AS returns_today
+        FROM loans 
+        WHERE status IN ('ACTIVE', 'RETURNED')
+    `);
         return results[0];
     }
 }

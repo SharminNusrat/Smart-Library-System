@@ -89,9 +89,9 @@ const Book = {
         updateValues.push(bookId);
 
         const updateQuery = `
-        UPDATE books
-        SET ${updateFields.join(', ')}
-        WHERE id = ?
+            UPDATE books
+            SET ${updateFields.join(', ')}
+            WHERE id = ?
         `;
         console.log(updateQuery);
 

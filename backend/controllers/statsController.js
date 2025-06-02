@@ -38,6 +38,7 @@ const getSystemOverview = async (req, res) => {
             Loan.getCurrentStats()
         ]);
 
+        console.log(loanStats)
         res.status(200).json({
             total_books: bookCounts.total_books,
             total_users: userCount,
