@@ -1,7 +1,10 @@
 const axios = require('axios')
 const circuitBreaker = require('opossum')
-const baseUserUrl = 'http://localhost:8081/api/users'
-const baseBookUrl = 'http://localhost:8082/api/books'
+const baseUserUrl = 'http://user-svc:8081/api/users'
+const baseBookUrl = 'http://book-svc:8082/api/books'
+
+// const baseUserUrl = 'http://localhost:8081/api/users'
+// const baseBookUrl = 'http://localhost:8082/api/books'
 
 const axiosInstance = axios.create({
     timeout: 3000, // 3s timeout

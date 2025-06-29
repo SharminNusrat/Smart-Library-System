@@ -98,7 +98,7 @@ const Loan = {
 
         const [results] = await db.promise().query(loanQuery, [userId]);
 
-        return results[0];
+        return results;
     },
 
     findOverdue: async () => {
