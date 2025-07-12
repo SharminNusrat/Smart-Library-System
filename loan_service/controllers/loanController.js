@@ -90,7 +90,7 @@ const returnBook = async (req, res) => {
     }
 
     try {
-         const returnedLoan = await Loan.returnBook(loan_id);
+        const returnedLoan = await Loan.returnBook(loan_id);
 
         if (returnedLoan) {
             try {
@@ -104,7 +104,7 @@ const returnBook = async (req, res) => {
             status: 'success',
             data: returnedLoan
         });
-        
+
     } catch (err) {
         console.error(err);
         const statusCode = err.message.includes('not found') ? 404 : 500;
@@ -116,6 +116,7 @@ const returnBook = async (req, res) => {
 };
 
 const getLoanById = async (req, res) => {
+    console.log("hello!")
     const loanId = req.params.id
 
     if (!loanId || isNaN(loanId)) {
@@ -127,7 +128,7 @@ const getLoanById = async (req, res) => {
 
     try {
         const loan = await Loan.getById(loanId);
-        
+
         if (!loan) {
             return res.status(404).json({
                 status: 'error',
@@ -140,7 +141,14 @@ const getLoanById = async (req, res) => {
             getBookById(loan.book_id)
         ]);
 
-        const user = userResponse.status === 'fulfilled' 
+        console.log('Book service call status:', bookResponse.status);
+        if (bookResponse.status === 'fulfilled') {
+            console.log('Book data:', bookResponse.value);
+        } else {
+            console.error('Book service call failed:', bookResponse.reason);
+        }
+
+        const user = userResponse.status === 'fulfilled'
             ? {
                 id: userResponse.value.id,
                 name: userResponse.value.name,
@@ -150,9 +158,9 @@ const getLoanById = async (req, res) => {
 
         const book = bookResponse.status === 'fulfilled'
             ? {
-                id: bookResponse.value.id,
-                title: bookResponse.value.title,
-                author: bookResponse.value.author
+                id: bookResponse.value.data.id,
+                title: bookResponse.value.data.title,
+                author: bookResponse.value.data.author
             }
             : { id: loan.book_id };
 
@@ -234,7 +242,7 @@ const getUserLoans = async (req, res) => {
 const getOverdueLoans = async (req, res) => {
     try {
         const results = await Loan.findOverdue();
-        
+
         const overdueLoans = await Promise.all(
             results.map(async (loan) => {
                 let user = { id: loan.user_id };

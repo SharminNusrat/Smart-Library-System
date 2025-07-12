@@ -1,0 +1,93 @@
+version: '3.8'
+
+services:
+
+  user-service:
+    build: ./user_service
+    container_name: user-svc
+    env_file:
+      - ./user_service/.env
+    ports:
+      - "8081:8081"
+    depends_on:
+      - user-db
+  
+  book-service:
+    build: ./book_service
+    container_name: book-svc
+    env_file:
+      - ./book_service/.env
+    ports:
+      - "8082:8082"
+    depends_on:
+      - book-db
+
+  loan-service:
+    build: ./loan_service
+    container_name: loan-svc
+    env_file:
+      - ./loan_service/.env
+    ports:
+      - "8083:8083"
+    depends_on:
+      - loan-db
+      - user-service
+      - book-service
+  
+  nginx:
+    build: ./nginx
+    container_name: nginx
+    ports:
+      - "80:80"
+    depends_on:
+      - user-service
+      - book-service
+      - loan-service
+  
+  phpmyadmin: 
+    image: phpmyadmin/phpmyadmin
+    container_name: pma
+    restart: always
+    ports:
+      - "8080:80"
+    environment:
+      - PMA_ARBITRARY=1
+    
+
+  user-db: 
+    image: mysql:8
+    container_name: user-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=smart_library_user_db
+    ports:
+      - "3307:3306"
+    volumes:
+      - user_data:/var/lib/mysql
+
+  book-db: 
+    image: mysql:8
+    container_name: book-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=smart_library_book_db
+    ports:
+      - "3308:3306"
+    volumes:
+      - book_data:/var/lib/mysql
+
+  loan-db: 
+    image: mysql:8
+    container_name: loan-db
+    environment:
+      - MYSQL_ROOT_PASSWORD=${MYSQL_ROOT_PASSWORD}
+      - MYSQL_DATABASE=smart_library_loan_db
+    ports:
+      - "3309:3306"
+    volumes:
+      - loan_data:/var/lib/mysql
+    
+volumes:
+  user_data:
+  book_data:
+  loan_data:
